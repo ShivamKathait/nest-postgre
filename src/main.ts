@@ -24,8 +24,8 @@ async function bootstrap() {
     .setVersion('1.0') 
     .addBearerAuth({ type: 'http', name: 'authorization', in: 'header' }, 'authorization')
     .addServer(`http://localhost:3009/`, "local server")
-    .addServer('https://3dd5-2404-7c80-64-d396-2ddc-6e3a-f3e5-a0a8.ngrok-free.app', 'Ngrok tunnel') // ✅ Add ngrok as a Swagger server
-    .build();
+    .addServer('https://306e-2401-4900-598d-c4dc-ec42-eec5-e260-5082.ngrok-free.app', 'Ngrok tunnel') // ✅ Add ngrok as a Swagger server
+    .build();  
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);

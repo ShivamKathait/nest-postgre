@@ -21,7 +21,7 @@ import { Product } from './product/entities/product.entity';
       username: 'shivam',
       entities: [Admin, Session, Product],
       database: 'testTask',
-      synchronize: true,
+      synchronize: false,
       logging: true,
     }),
     TypeOrmModule.forFeature([Admin, Session, Product]),

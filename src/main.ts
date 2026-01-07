@@ -16,8 +16,15 @@ async function bootstrap() {
   app.enableCors();
   app.use(express.json());
   app.set('trust proxy', 1);
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, skipMissingProperties: true  }));
-  app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true, transform: true, whitelist: true }));
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    skipMissingProperties: false,
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
+  }));
   const config = new DocumentBuilder()
     .setTitle('Test App')
     .setDescription('Test API description')

@@ -9,8 +9,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { Session } from './entities/session.entity';
 
 @Module({
-  imports: [HttpModule, JwtModule,TypeOrmModule.forFeature([Admin, Session])],
+  imports: [HttpModule, JwtModule, TypeOrmModule.forFeature([Admin, Session])],
   controllers: [AdminController],
   providers: [AdminService, ConfigService],
+  exports: [AdminService],
 })
-export class UsersModule {} 
+export class AdminModule {}

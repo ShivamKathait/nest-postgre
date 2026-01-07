@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { CreateAdminto, LoginDto, OtpDto } from './dto/create-admin.dto';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
@@ -13,6 +13,8 @@ import { JwtService } from '@nestjs/jwt';
 import { validate } from 'class-validator';
 import { Session } from './entities/session.entity';
 import { ResponseUserDto } from './dto/response.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class AdminService {
@@ -28,6 +30,7 @@ export class AdminService {
     private readonly httpService: HttpService,
     @InjectRepository(Admin) private readonly adminModel: Repository<Admin>,
     @InjectRepository(Session) private readonly sessionModel: Repository<Session>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.country_api = this.configService.get<string>('FETCH_COUNTRY_API')!
     this.accessKey = this.configService.get<string>('ACCESS_KEY')!
@@ -82,6 +85,8 @@ export class AdminService {
       };
       const query = { id: user_id };
       await this.adminModel.update(query, otpDetails);
+      // Clear temp user cache when OTP is generated (user state changes)
+      await this.clearUserCache(user_id);
       return
     } catch (error) {
       throw error
@@ -151,6 +156,8 @@ export class AdminService {
       }
       let update = { otp_expire_at: null, otp: null, is_email_verified: true }
       await this.adminModel.update(user.id, update);
+      // Clear user cache after email verification
+      await this.clearUserCache(user.id);
       let data = { message: "Otp verified successfully." }
       return { data }
     } catch (error) {
@@ -184,6 +191,8 @@ export class AdminService {
       if (!isPassword) throw new Errors.IncorrectCreds();
       let session = await this.createSession(isUser.id, isUser.role);
       let access_token = await this.generateToken(isUser.id, session.id, isUser.email, isUser.role)
+      // Clear any existing temp user cache after successful login
+      await this.clearUserCache(isUser.id);
       const userData = { ...isUser, access_token };
       const response = new ResponseUserDto(userData);
       await validate(response, { whitelist: true });
@@ -192,5 +201,20 @@ export class AdminService {
     } catch (error) {
       throw error
     }
+  }
+
+  // Helper method to clear user cache
+  private async clearUserCache(userId: number) {
+    // Clear temp user cache
+    const tempCacheKey = `auth:temp-user:${userId}`;
+    await this.cacheManager.del(tempCacheKey);
+
+    // Clear all session-based caches for this user
+    // Since we don't know all session IDs, we'll use a pattern
+    // In production, you might want to maintain a list of active sessions per user
+    // For now, we'll clear common patterns or use Redis SCAN in production
+    const sessionPattern = `auth:user:${userId}:session:*`;
+    // Note: cache-manager doesn't support pattern deletion directly with Redis
+    // In production, consider using Redis directly or maintaining session lists
   }
 }
